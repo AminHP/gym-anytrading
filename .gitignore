@@ -1,5 +1,6 @@
 .idea/
 .vscode/
+.ipynb_checkpoints/
 *.pyc
 venv*/
 
