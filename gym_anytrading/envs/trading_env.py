@@ -148,6 +148,9 @@ class TradingEnv(gym.Env):
             "Total Reward: %.6f" % self._total_reward + ' ~ ' +
             "Total Profit: %.6f" % self._total_profit
         )
+        
+    def close(self):
+        plt.close()
 
 
     def save_rendering(self, filepath):
