@@ -149,6 +149,7 @@ class TradingEnv(gym.Env):
             "Total Profit: %.6f" % self._total_profit
         )
         
+        
     def close(self):
         plt.close()
 
