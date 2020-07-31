@@ -47,6 +47,7 @@ class TradingEnv(gym.Env):
         self._total_reward = None
         self._total_profit = None
         self._first_rendering = None
+        self.history = None
 
 
     def seed(self, seed=None):
@@ -63,6 +64,7 @@ class TradingEnv(gym.Env):
         self._total_reward = 0.
         self._total_profit = 1.  # unit
         self._first_rendering = True
+        self.history = {}
         return self._get_observation()
 
 
@@ -94,11 +96,21 @@ class TradingEnv(gym.Env):
             total_profit = self._total_profit,
             position = self._position.value
         )
+        self._update_history(info)
+
         return observation, step_reward, self._done, info
 
 
     def _get_observation(self):
         return self.signal_features[(self._current_tick-self.window_size):self._current_tick]
+
+
+    def _update_history(self, info):
+        if not self.history:
+            self.history = {key: [] for key in info.keys()}
+
+        for key, value in info.items():
+            self.history[key].append(value)
 
 
     def render(self, mode='human'):
