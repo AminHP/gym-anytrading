@@ -19,6 +19,10 @@ pip install gym-anytrading
 git clone https://github.com/AminHP/gym-anytrading
 cd gym-anytrading
 pip install -e .
+
+## or
+
+pip install --upgrade --no-deps --force-reinstall https://github.com/AminHP/gym-anytrading/archive/master.zip
 ```
 
 ## Environment Properties
@@ -60,6 +64,8 @@ TradingEnv is an abstract class which inherits `gym.Env`. This class aims to pro
 > `observation_space`: The *Gym observation_space* property. Each observation is a window on `signal_features` from index **current_tick - window_size + 1** to **current_tick**. So `_start_tick` of the environment would be equal to `window_size`. In addition, initial value for `_last_trade_tick` is **window_size - 1** .
 >
 > `shape`: Shape of a single observation.
+>
+> `history`: Stores the information of all steps.
 
 * Methods:
 > `seed`: Typical *Gym seed* method.
@@ -71,6 +77,8 @@ TradingEnv is an abstract class which inherits `gym.Env`. This class aims to pro
 > `render`: Typical *Gym render* method. Renders the information of the environment's current tick.
 >
 > `render_all`: Renders the whole environment.
+>
+> `close`: Typical *Gym close* method.
 
 * Abstract Methods:
 > `_process_data`: It is called in the constructor and returns `prices` and `signal_features` as a tuple. In different trading markets, different features need to be obtained. So this method enables our TradingEnv to be a general-purpose environment and specific features can be returned for specific environments such as *FOREX*, *Stocks*, etc.
@@ -230,6 +238,10 @@ plt.show()
 
 - You can use `render_all` method to avoid rendering on each step and prevent time-wasting.
 - As you see, the first **10** points (`window_size`=10) on the plot don't have a *position*. Because they aren't involved in calculating reward, profit, etc. They just display the first observations. So the environment's `_start_tick` and initial `_last_trade_tick` are **10** and **9**.
+
+#### Mix with `stable-baselines` and `quantstats`
+
+[Here](https://github.com/AminHP/gym-anytrading/blob/master/examples/a2c_quantstats.ipynb) is an example that mixes `gym-anytrading` with the mentioned famous libraries and shows how to utilize our trading environments in other RL or trading libraries.
 
 ### Extend and manipulate TradingEnv
 
