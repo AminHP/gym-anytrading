@@ -7,6 +7,9 @@ Trading algorithms are mostly implemented in two markets: [FOREX](https://en.wik
 
 TradingEnv is an abstract environment which is defined to support all kinds of trading environments. ForexEnv and StocksEnv are simply two environments that inherit and extend TradingEnv. In the future sections, more explanations will be given about them but before that, some environment properties should be discussed.
 
+**Note:** For experts, it is recommended to check out the [gym-mtsim](https://github.com/AminHP/gym-mtsim) project.
+
+
 ## Installation
 
 ### Via PIP
