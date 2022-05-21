@@ -102,7 +102,7 @@ class TradingEnv(gym.Env):
 
 
     def _get_observation(self):
-        return self.signal_features[(self._current_tick-self.window_size):self._current_tick]
+        return self.signal_features[(self._current_tick-self.window_size+1):self._current_tick+1]
 
 
     def _update_history(self, info):
