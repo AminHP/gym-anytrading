@@ -34,7 +34,7 @@ class TradingEnv(gym.Env):
 
         # spaces
         self.action_space = spaces.Discrete(len(Actions))
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float32)
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float64)
 
         # episode
         self._start_tick = self.window_size
