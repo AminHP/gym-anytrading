@@ -7,6 +7,7 @@ setup(
 
     author='AminHP',
     author_email='mdan.hagh@gmail.com',
+    license='MIT',
 
     install_requires=[
         'gym>=0.12.5',
