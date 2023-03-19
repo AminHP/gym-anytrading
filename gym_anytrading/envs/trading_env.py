@@ -1,6 +1,5 @@
-import gym
-from gym import spaces
-from gym.utils import seeding
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 from enum import Enum
 import matplotlib.pyplot as plt
@@ -21,12 +20,14 @@ class Positions(Enum):
 
 class TradingEnv(gym.Env):
 
-    metadata = {'render.modes': ['human']}
+    metadata = {'render_modes': ['human']}
 
-    def __init__(self, df, window_size):
+    def __init__(self, df, window_size, render_mode=None):
         assert df.ndim == 2
 
-        self.seed()
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
         self.df = df
         self.window_size = window_size
         self.prices, self.signal_features = self._process_data()
@@ -50,12 +51,16 @@ class TradingEnv(gym.Env):
         self.history = None
 
 
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+    def _get_info(self):
+        return dict(
+            total_reward = self._total_reward,
+            total_profit = self._total_profit,
+            position = self._position.value
+        )
 
+    def reset(self, seed=None):
+        super().reset(seed=seed)
 
-    def reset(self):
         self._done = False
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
@@ -65,8 +70,15 @@ class TradingEnv(gym.Env):
         self._total_profit = 1.  # unit
         self._first_rendering = True
         self.history = {}
-        return self._get_observation()
 
+        info = self._get_info()
+        observation = self._get_observation()
+        info = self._get_info()
+
+        if self.render_mode == "human":
+            self._render_frame()
+
+        return observation, info
 
     def step(self, action):
         self._done = False
@@ -91,14 +103,13 @@ class TradingEnv(gym.Env):
 
         self._position_history.append(self._position)
         observation = self._get_observation()
-        info = dict(
-            total_reward = self._total_reward,
-            total_profit = self._total_profit,
-            position = self._position.value
-        )
+        info = self._get_info()
         self._update_history(info)
 
-        return observation, step_reward, self._done, info
+        if self.render_mode == "human":
+            self._render_frame()
+
+        return observation, step_reward, self._done, False, info
 
 
     def _get_observation(self):
@@ -112,6 +123,8 @@ class TradingEnv(gym.Env):
         for key, value in info.items():
             self.history[key].append(value)
 
+    def _render_frame(self):
+        self.render()
 
     def render(self, mode='human'):
 

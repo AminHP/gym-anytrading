@@ -5,13 +5,13 @@ from .trading_env import TradingEnv, Actions, Positions
 
 class ForexEnv(TradingEnv):
 
-    def __init__(self, df, window_size, frame_bound, unit_side='left'):
+    def __init__(self, df, window_size, frame_bound, unit_side='left', render_mode=None):
         assert len(frame_bound) == 2
         assert unit_side.lower() in ['left', 'right']
 
         self.frame_bound = frame_bound
         self.unit_side = unit_side.lower()
-        super().__init__(df, window_size)
+        super().__init__(df, window_size, render_mode)
 
         self.trade_fee = 0.0003  # unit
 
