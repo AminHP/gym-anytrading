@@ -31,7 +31,7 @@ class TradingEnv(gym.Env):
         self.df = df
         self.window_size = window_size
         self.prices, self.signal_features = self._process_data()
-        self.shape = (window_size, self.signal_features.shape[1])
+        self.shape = (window_size * 2, )
 
         # spaces
         self.action_space = spaces.Discrete(len(Actions))
@@ -40,7 +40,7 @@ class TradingEnv(gym.Env):
         # episode
         self._start_tick = self.window_size
         self._end_tick = len(self.prices) - 1
-        self._done = None
+        self._terminated = None
         self._current_tick = None
         self._last_trade_tick = None
         self._position = None
@@ -50,6 +50,11 @@ class TradingEnv(gym.Env):
         self._first_rendering = None
         self.history = None
 
+        # create cache for faster training
+        self._observation_cache = []
+        for current_tick in range(self._start_tick, self._end_tick + 1):
+            obs = self.signal_features[(current_tick-self.window_size+1):current_tick+1].flatten()
+            self._observation_cache.append(obs)
 
     def _get_info(self):
         return dict(
@@ -58,10 +63,10 @@ class TradingEnv(gym.Env):
             position = self._position.value
         )
 
-    def reset(self, seed=None):
+    def reset(self, seed=None, options=None):
         super().reset(seed=seed)
 
-        self._done = False
+        self._terminated = False
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
         self._position = Positions.Short
@@ -81,11 +86,11 @@ class TradingEnv(gym.Env):
         return observation, info
 
     def step(self, action):
-        self._done = False
+        self._terminated = False
         self._current_tick += 1
 
         if self._current_tick == self._end_tick:
-            self._done = True
+            self._terminated = True
 
         step_reward = self._calculate_reward(action)
         self._total_reward += step_reward
@@ -109,11 +114,11 @@ class TradingEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        return observation, step_reward, self._done, False, info
+        return observation, step_reward, self._terminated, False, info
 
 
     def _get_observation(self):
-        return self.signal_features[(self._current_tick-self.window_size+1):self._current_tick+1]
+        return self._observation_cache[self._current_tick-self.window_size]
 
 
     def _update_history(self, info):
@@ -154,7 +159,7 @@ class TradingEnv(gym.Env):
         plt.pause(0.01)
 
 
-    def render_all(self, mode='human'):
+    def render_all(self, title=None):
         window_ticks = np.arange(len(self._position_history))
         plt.plot(self.prices)
 
@@ -169,6 +174,7 @@ class TradingEnv(gym.Env):
         plt.plot(short_ticks, self.prices[short_ticks], 'ro')
         plt.plot(long_ticks, self.prices[long_ticks], 'go')
 
+        if title: plt.title(title)
         plt.suptitle(
             "Total Reward: %.6f" % self._total_reward + ' ~ ' +
             "Total Profit: %.6f" % self._total_profit
