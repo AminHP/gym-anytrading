@@ -138,7 +138,7 @@ if show_stats:
     df1.rename(columns={"variable": "episodes", "value": "reward"}, inplace=True)
     sns.set(style="darkgrid", context="talk", palette="rainbow")
     sns.lineplot(x="episodes", y="reward", data=df1).set(
-        title="REINFORCE for stocks-v0"
+        title=f"REINFORCE for {env_name}"
     )
     plt.show()
 #=======================================================================================================
