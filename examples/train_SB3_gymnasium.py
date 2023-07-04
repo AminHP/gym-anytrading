@@ -1,6 +1,5 @@
-# stable-baselines3, Add Gymnasium support: 
-# https://github.com/DLR-RM/stable-baselines3/pull/1327
-# pip install git+https://github.com/DLR-RM/stable-baselines3@feat/gymnasium-support
+# stable-baselines3
+# pip install stable-baselines3[extra] or pip install 'stable-baselines3[extra]'
 
 import os
 import sys
@@ -14,13 +13,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-# RL Algorithms: https://stable-baselines3.readthedocs.io/en/master/guide/algos.html
-from stable_baselines3 import A2C, DDPG, DQN, PPO, SAC, TD3
-
-# Implemented in SB3 Contrib 
-# install SB3 Contrib + gymnasium-support
-# pip install git+https://github.com/Stable-Baselines-Team/stable-baselines3-contrib@feat/gymnasium-support
-from sb3_contrib import ARS, QRDQN, RecurrentPPO, TQC, TRPO, MaskablePPO 
+from stable_baselines3 import A2C, PPO
 
 from stable_baselines3.common.callbacks import BaseCallback
 from tqdm import tqdm
@@ -163,15 +156,12 @@ plot_data['rnd_rewards'] = rewards
 plot_settings['rnd_rewards'] = {'label': label}
 
 
-learning_timesteps_list_in_K = [5, 10, 25]
+learning_timesteps_list_in_K = [25]
 #learning_timesteps_list_in_K = [50, 250, 500]
 #learning_timesteps_list_in_K = [500, 1000, 3000, 5000]
 
 # RL Algorithms: https://stable-baselines3.readthedocs.io/en/master/guide/algos.html
-#model_class_list = [A2C, PPO]
-#model_class_list = [A2C, PPO, RecurrentPPO, TRPO]
-model_class_list = [A2C, DDPG, DQN, PPO, SAC, TD3,
-                    ARS, QRDQN, RecurrentPPO, TQC, TRPO, MaskablePPO] #from sb3_contrib
+model_class_list = [A2C, PPO]
 
 for timesteps in learning_timesteps_list_in_K:
 
