@@ -31,7 +31,7 @@ class TradingEnv(gym.Env):
         self.df = df
         self.window_size = window_size
         self.prices, self.signal_features = self._process_data()
-        self.shape = (window_size * 2, )
+        self.shape = (window_size, self.signal_features.shape[1])
 
         # spaces
         self.action_space = spaces.Discrete(len(Actions))
@@ -50,12 +50,6 @@ class TradingEnv(gym.Env):
         self._total_profit = None
         self._first_rendering = None
         self.history = None
-
-        # create cache for faster training
-        self._observation_cache = []
-        for current_tick in range(self._start_tick, self._end_tick + 1):
-            obs = self.signal_features[(current_tick-self.window_size+1):current_tick+1].flatten()
-            self._observation_cache.append(obs)
 
     def _get_info(self):
         return dict(
@@ -119,7 +113,7 @@ class TradingEnv(gym.Env):
 
 
     def _get_observation(self):
-        return self._observation_cache[self._current_tick-self.window_size]
+        return self.signal_features[(self._current_tick-self.window_size+1):self._current_tick+1]
 
 
     def _update_history(self, info):
