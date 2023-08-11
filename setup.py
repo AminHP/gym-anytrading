@@ -10,7 +10,7 @@ setup(
     license='MIT',
 
     install_requires=[
-        'gym>=0.12.5',
+        'gymnasium>=0.26.2',
         'numpy>=1.16.4',
         'pandas>=0.24.2',
         'matplotlib>=3.1.1'

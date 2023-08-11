@@ -1,6 +1,5 @@
-import gym
-from gym import spaces
-from gym.utils import seeding
+import gymnasium as gym
+from gymnasium import spaces
 import numpy as np
 from enum import Enum
 import matplotlib.pyplot as plt
@@ -21,12 +20,14 @@ class Positions(Enum):
 
 class TradingEnv(gym.Env):
 
-    metadata = {'render.modes': ['human']}
+    metadata = {'render_modes': ['human']}
 
-    def __init__(self, df, window_size):
+    def __init__(self, df, window_size, render_mode=None):
         assert df.ndim == 2
 
-        self.seed()
+        assert render_mode is None or render_mode in self.metadata["render_modes"]
+        self.render_mode = render_mode
+
         self.df = df
         self.window_size = window_size
         self.prices, self.signal_features = self._process_data()
@@ -34,12 +35,13 @@ class TradingEnv(gym.Env):
 
         # spaces
         self.action_space = spaces.Discrete(len(Actions))
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float64)
+        INF = 1e10
+        self.observation_space = spaces.Box(low=-INF, high=INF, shape=self.shape, dtype=np.float64)
 
         # episode
         self._start_tick = self.window_size
         self._end_tick = len(self.prices) - 1
-        self._done = None
+        self._terminated = None
         self._current_tick = None
         self._last_trade_tick = None
         self._position = None
@@ -49,14 +51,17 @@ class TradingEnv(gym.Env):
         self._first_rendering = None
         self.history = None
 
+    def _get_info(self):
+        return dict(
+            total_reward = self._total_reward,
+            total_profit = self._total_profit,
+            position = self._position.value
+        )
 
-    def seed(self, seed=None):
-        self.np_random, seed = seeding.np_random(seed)
-        return [seed]
+    def reset(self, seed=None, options=None):
+        super().reset(seed=seed)
 
-
-    def reset(self):
-        self._done = False
+        self._terminated = False
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
         self._position = Positions.Short
@@ -65,15 +70,22 @@ class TradingEnv(gym.Env):
         self._total_profit = 1.  # unit
         self._first_rendering = True
         self.history = {}
-        return self._get_observation()
 
+        info = self._get_info()
+        observation = self._get_observation()
+        info = self._get_info()
+
+        if self.render_mode == "human":
+            self._render_frame()
+
+        return observation, info
 
     def step(self, action):
-        self._done = False
+        self._terminated = False
         self._current_tick += 1
 
         if self._current_tick == self._end_tick:
-            self._done = True
+            self._terminated = True
 
         step_reward = self._calculate_reward(action)
         self._total_reward += step_reward
@@ -91,14 +103,13 @@ class TradingEnv(gym.Env):
 
         self._position_history.append(self._position)
         observation = self._get_observation()
-        info = dict(
-            total_reward = self._total_reward,
-            total_profit = self._total_profit,
-            position = self._position.value
-        )
+        info = self._get_info()
         self._update_history(info)
 
-        return observation, step_reward, self._done, info
+        if self.render_mode == "human":
+            self._render_frame()
+
+        return observation, step_reward, self._terminated, False, info
 
 
     def _get_observation(self):
@@ -112,6 +123,8 @@ class TradingEnv(gym.Env):
         for key, value in info.items():
             self.history[key].append(value)
 
+    def _render_frame(self):
+        self.render()
 
     def render(self, mode='human'):
 
@@ -141,7 +154,7 @@ class TradingEnv(gym.Env):
         plt.pause(0.01)
 
 
-    def render_all(self, mode='human'):
+    def render_all(self, title=None):
         window_ticks = np.arange(len(self._position_history))
         plt.plot(self.prices)
 
@@ -156,6 +169,7 @@ class TradingEnv(gym.Env):
         plt.plot(short_ticks, self.prices[short_ticks], 'ro')
         plt.plot(long_ticks, self.prices[long_ticks], 'go')
 
+        if title: plt.title(title)
         plt.suptitle(
             "Total Reward: %.6f" % self._total_reward + ' ~ ' +
             "Total Profit: %.6f" % self._total_profit
