@@ -1,4 +1,3 @@
-
 # gym-anytrading
 
 `AnyTrading` is a collection of [OpenAI Gym](https://github.com/openai/gym) environments for reinforcement learning-based trading algorithms.
@@ -8,7 +7,6 @@ Trading algorithms are mostly implemented in two markets: [FOREX](https://en.wik
 TradingEnv is an abstract environment which is defined to support all kinds of trading environments. ForexEnv and StocksEnv are simply two environments that inherit and extend TradingEnv. In the future sections, more explanations will be given about them but before that, some environment properties should be discussed.
 
 **Note:** For experts, it is recommended to check out the [gym-mtsim](https://github.com/AminHP/gym-mtsim) project.
-
 
 ## Installation
 
@@ -122,12 +120,11 @@ Besides, you can create your own customized environment by extending TradingEnv 
 
 
 ```python
-import gym
+import gymnasium as gym
 import gym_anytrading
 
 env = gym.make('forex-v0')
 # env = gym.make('stocks-v0')
-
 ```
 
 - This will create the default environment. You can change any parameters such as dataset, frame_bound, etc.
@@ -139,16 +136,20 @@ I put two default datasets for [*FOREX*](https://github.com/AminHP/gym-anytradin
 ```python
 from gym_anytrading.datasets import FOREX_EURUSD_1H_ASK, STOCKS_GOOGL
 
-custom_env = gym.make('forex-v0',
-               df = FOREX_EURUSD_1H_ASK,
-               window_size = 10,
-               frame_bound = (10, 300),
-               unit_side = 'right')
+custom_env = gym.make(
+    'forex-v0',
+    df=FOREX_EURUSD_1H_ASK,
+    window_size=10,
+    frame_bound=(10, 300),
+    unit_side='right'
+)
 
-# custom_env = gym.make('stocks-v0',
-#                df = STOCKS_GOOGL,
-#                window_size = 10,
-#                frame_bound = (10, 300))
+# custom_env = gym.make(
+#     'stocks-v0',
+#     df=STOCKS_GOOGL,
+#     window_size=10,
+#     frame_bound=(10, 300)
+# )
 ```
 
 - It is to be noted that the first element of `frame_bound` should be greater than or equal to `window_size`.
@@ -158,19 +159,19 @@ custom_env = gym.make('forex-v0',
 
 ```python
 print("env information:")
-print("> shape:", env.shape)
-print("> df.shape:", env.df.shape)
-print("> prices.shape:", env.prices.shape)
-print("> signal_features.shape:", env.signal_features.shape)
-print("> max_possible_profit:", env.max_possible_profit())
+print("> shape:", env.unwrapped.shape)
+print("> df.shape:", env.unwrapped.df.shape)
+print("> prices.shape:", env.unwrapped.prices.shape)
+print("> signal_features.shape:", env.unwrapped.signal_features.shape)
+print("> max_possible_profit:", env.unwrapped.max_possible_profit())
 
 print()
 print("custom_env information:")
-print("> shape:", custom_env.shape)
-print("> df.shape:", custom_env.df.shape)
-print("> prices.shape:", custom_env.prices.shape)
-print("> signal_features.shape:", custom_env.signal_features.shape)
-print("> max_possible_profit:", custom_env.max_possible_profit())
+print("> shape:", custom_env.unwrapped.shape)
+print("> df.shape:", custom_env.unwrapped.df.shape)
+print("> prices.shape:", custom_env.unwrapped.prices.shape)
+print("> signal_features.shape:", custom_env.unwrapped.signal_features.shape)
+print("> max_possible_profit:", custom_env.unwrapped.max_possible_profit())
 ```
 
     env information:
@@ -178,17 +179,17 @@ print("> max_possible_profit:", custom_env.max_possible_profit())
     > df.shape: (6225, 5)
     > prices.shape: (6225,)
     > signal_features.shape: (6225, 2)
-    > max_possible_profit: 4.054414887146586
+    > max_possible_profit: 4.054407219413578
     
     custom_env information:
     > shape: (10, 2)
     > df.shape: (6225, 5)
     > prices.shape: (300,)
     > signal_features.shape: (300, 2)
-    > max_possible_profit: 1.122900180008982
+    > max_possible_profit: 1.1228998536878634
     
 
-- Here `max_possible_profit` signifies that if the market didn't have trade fees, you could have earned **4.054414887146586** (or **1.122900180008982**) units of currency by starting with **1.0**. In other words, your money is almost *quadrupled*.
+- Here `max_possible_profit` signifies that if the market didn't have trade fees, you could have earned **4.054414887146572** (or **1.1229001800089833**) units of currency by starting with **1.0**. In other words, your money is almost *quadrupled*.
 
 ### Plot the environment
 
@@ -199,7 +200,9 @@ env.render()
 ```
 
 
+    
 ![png](docs/output_11_0.png)
+    
 
 
 - **Short** and **Long** positions are shown in `red` and `green` colors.
@@ -209,42 +212,49 @@ env.render()
 
 
 ```python
-import gym
+import numpy as np
+import matplotlib.pyplot as plt
+
+import gymnasium as gym
 import gym_anytrading
 from gym_anytrading.envs import TradingEnv, ForexEnv, StocksEnv, Actions, Positions 
 from gym_anytrading.datasets import FOREX_EURUSD_1H_ASK, STOCKS_GOOGL
-import matplotlib.pyplot as plt
+
 
 env = gym.make('forex-v0', frame_bound=(50, 100), window_size=10)
 # env = gym.make('stocks-v0', frame_bound=(50, 100), window_size=10)
 
-observation = env.reset()
+observation = env.reset(seed=2023)
 while True:
     action = env.action_space.sample()
-    observation, reward, done, info = env.step(action)
+    observation, reward, terminated, truncated, info = env.step(action)
+    done = terminated or truncated
+
     # env.render()
     if done:
         print("info:", info)
         break
 
 plt.cla()
-env.render_all()
+env.unwrapped.render_all()
 plt.show()
 ```
 
-    info: {'total_reward': -173.10000000000602, 'total_profit': 0.980652456904312, 'position': 0}
+    info: {'total_reward': 27.89616584777832, 'total_profit': 0.989812615901, 'position': <Positions.Long: 1>}
     
 
 
+    
 ![png](docs/output_14_1.png)
+    
 
 
 - You can use `render_all` method to avoid rendering on each step and prevent time-wasting.
 - As you see, the first **10** points (`window_size`=10) on the plot don't have a *position*. Because they aren't involved in calculating reward, profit, etc. They just display the first observations. So the environment's `_start_tick` and initial `_last_trade_tick` are **10** and **9**.
 
-#### Mix with `stable-baselines` and `quantstats`
+#### More examples
 
-[Here](https://github.com/AminHP/gym-anytrading/blob/master/examples/a2c_quantstats.ipynb) is an example that mixes `gym-anytrading` with the mentioned famous libraries and shows how to utilize our trading environments in other RL or trading libraries.
+[Here](https://github.com/AminHP/gym-anytrading/blob/master/examples) are some examples that mix `gym-anytrading` with some well-known libraries, such as `Stable-Baselines3` and `QuantStats`, and show how to utilize our trading environments in other RL or trading libraries.
 
 ### Extend and manipulate TradingEnv
 
