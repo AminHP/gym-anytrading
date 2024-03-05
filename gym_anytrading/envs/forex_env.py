@@ -58,7 +58,6 @@ class ForexEnv(TradingEnv):
         self.df.dropna(inplace=True)
         self.meaningful_df = pd.DataFrame()
 
-        # Assuming 'df' is your source DataFrame and 'meaningful_df' is the target DataFrame where you want to store your results
 
         # Simple Moving Average (SMA) Comparisons
         self.meaningful_df['SMA_5_above_14'] = (self.df['SMA_5'] >= self.df['SMA_14']).astype(int)
@@ -104,14 +103,6 @@ class ForexEnv(TradingEnv):
         self.meaningful_df['MACD_signal_above_macd'] = (self.df['MACDs_12_26_9'] >= self.df['MACD_12_26_9']).astype(int)
         self.meaningful_df['MACD_histogram'] = self.df['MACDh_12_26_9']
         self.meaningful_df['MACD_histogram_sign'] = (self.df['MACDh_12_26_9'] >= 0).astype(int)
-
-
-
-
-
-        
-
-
 
 
         prices = self.df.loc[:, 'Close'].to_numpy()
