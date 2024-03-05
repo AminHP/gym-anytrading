@@ -1,21 +1,22 @@
 import numpy as np
+import pandas as pd
+from typing import Tuple, Optional
 
 from .trading_env import TradingEnv, Actions, Positions
 
-
 class ForexEnv(TradingEnv):
 
-    def __init__(self, df, window_size, frame_bound, unit_side='left', render_mode=None):
+    def __init__(self, df: pd.DataFrame, window_size: int, frame_bound: Tuple[int, int], unit_side: str = 'left', render_mode: Optional[str] = None):
         assert len(frame_bound) == 2
         assert unit_side.lower() in ['left', 'right']
 
-        self.frame_bound = frame_bound
-        self.unit_side = unit_side.lower()
+        self.frame_bound: Tuple[int, int] = frame_bound
+        self.unit_side: str = unit_side.lower()
         super().__init__(df, window_size, render_mode)
 
-        self.trade_fee = 0.0003  # unit
+        self.trade_fee: float = 0.0003  # unit
 
-    def _process_data(self):
+    def _process_data(self) -> Tuple[np.ndarray, np.ndarray]:
         prices = self.df.loc[:, 'Close'].to_numpy()
 
         prices[self.frame_bound[0] - self.window_size]  # validate index (TODO: Improve validation)
@@ -26,7 +27,7 @@ class ForexEnv(TradingEnv):
 
         return prices.astype(np.float32), signal_features.astype(np.float32)
 
-    def _calculate_reward(self, action):
+    def _calculate_reward(self, action: int) -> float:
         step_reward = 0  # pip
 
         trade = False
@@ -48,7 +49,7 @@ class ForexEnv(TradingEnv):
 
         return step_reward
 
-    def _update_profit(self, action):
+    def _update_profit(self, action: int):
         trade = False
         if (
             (action == Actions.Buy.value and self._position == Positions.Short) or
@@ -74,7 +75,7 @@ class ForexEnv(TradingEnv):
                     quantity = self._total_profit / last_trade_price
                     self._total_profit = quantity * (current_price - self.trade_fee)  
 
-    def max_possible_profit(self):
+    def max_possible_profit(self) -> float:
         current_tick = self._start_tick
         last_trade_tick = current_tick - 1
         profit = 1.
