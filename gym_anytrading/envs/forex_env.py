@@ -59,16 +59,20 @@ class ForexEnv(TradingEnv):
         if trade or self._truncated:
             current_price = self.prices[self._current_tick]
             last_trade_price = self.prices[self._last_trade_tick]
-
             if self.unit_side == 'left':
                 if self._position == Positions.Short:
-                    quantity = self._total_profit * (last_trade_price - self.trade_fee)
-                    self._total_profit = quantity / current_price
-
-            elif self.unit_side == 'right':
-                if self._position == Positions.Long:
+                    quantity = self._total_profit * last_trade_price
+                    self._total_profit = quantity / (current_price + self.trade_fee) 
+                elif self._position == Positions.Long:
                     quantity = self._total_profit / last_trade_price
-                    self._total_profit = quantity * (current_price - self.trade_fee)
+                    self._total_profit = quantity * (current_price - self.trade_fee) 
+            elif self.unit_side == 'right':
+                if self._position == Positions.Short:
+                    quantity = self._total_profit * last_trade_price
+                    self._total_profit = quantity / (current_price + self.trade_fee) 
+                elif self._position == Positions.Long:
+                    quantity = self._total_profit / last_trade_price
+                    self._total_profit = quantity * (current_price - self.trade_fee)  
 
     def max_possible_profit(self):
         current_tick = self._start_tick
