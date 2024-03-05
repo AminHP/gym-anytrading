@@ -5,8 +5,26 @@ from typing import Tuple, Optional
 from .trading_env import TradingEnv, Actions, Positions
 
 class ForexEnv(TradingEnv):
+    """A trading environment for Forex based on the TradingEnv abstract class.
 
+    This class provides specific implementations for Forex trading, including
+    data processing, reward calculation, and profit updates.
+
+    Attributes:
+        frame_bound (Tuple[int, int]): A tuple representing the start and end index for the trading frame.
+        unit_side (str): A string indicating the side of the unit ('left' or 'right').
+        trade_fee (float): The trading fee per trade.
+    """
     def __init__(self, df: pd.DataFrame, window_size: int, frame_bound: Tuple[int, int], unit_side: str = 'left', render_mode: Optional[str] = None):
+        """Initializes the ForexEnv with the given parameters.
+
+        Args:
+            df (pd.DataFrame): The dataset containing price information.
+            window_size (int): The size of the moving window that includes the current price and the previous prices.
+            frame_bound (Tuple[int, int]): The start and end indices for the trading frame.
+            unit_side (str, optional): The side of the unit for profit calculation ('left' or 'right'). Defaults to 'left'.
+            render_mode (Optional[str], optional): The mode for rendering the environment. Defaults to None.
+        """
         assert len(frame_bound) == 2
         assert unit_side.lower() in ['left', 'right']
 
@@ -17,6 +35,11 @@ class ForexEnv(TradingEnv):
         self.trade_fee: float = 0.0003  # unit
 
     def _process_data(self) -> Tuple[np.ndarray, np.ndarray]:
+        """Processes the raw data to generate features for trading.
+
+        Returns:
+            Tuple[np.ndarray, np.ndarray]: A tuple containing the processed prices and signal features as numpy arrays.
+        """
         prices = self.df.loc[:, 'Close'].to_numpy()
 
         prices[self.frame_bound[0] - self.window_size]  # validate index (TODO: Improve validation)
@@ -28,6 +51,14 @@ class ForexEnv(TradingEnv):
         return prices.astype(np.float32), signal_features.astype(np.float32)
 
     def _calculate_reward(self, action: int) -> float:
+        """Calculates the reward based on the given action.
+
+        Args:
+            action (int): The action taken by the agent.
+
+        Returns:
+            float: The calculated reward for the action.
+        """
         step_reward = 0  # pip
 
         trade = False
@@ -50,6 +81,11 @@ class ForexEnv(TradingEnv):
         return step_reward
 
     def _update_profit(self, action: int):
+        """Updates the total profit based on the given action.
+
+        Args:
+            action (int): The action taken by the agent.
+        """
         trade = False
         if (
             (action == Actions.Buy.value and self._position == Positions.Short) or
@@ -76,6 +112,11 @@ class ForexEnv(TradingEnv):
                     self._total_profit = quantity * (current_price - self.trade_fee)  
 
     def max_possible_profit(self) -> float:
+        """Calculates the maximum possible profit for the given frame.
+
+        Returns:
+            float: The maximum possible profit.
+        """
         current_tick = self._start_tick
         last_trade_tick = current_tick - 1
         profit = 1.
