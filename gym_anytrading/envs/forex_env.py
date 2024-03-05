@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 from typing import Tuple, Optional
-
+import pandas_ta as ta
 from .trading_env import TradingEnv, Actions, Positions
 
 class ForexEnv(TradingEnv):
@@ -40,13 +40,86 @@ class ForexEnv(TradingEnv):
         Returns:
             Tuple[np.ndarray, np.ndarray]: A tuple containing the processed prices and signal features as numpy arrays.
         """
+        
+        self.df = pd.concat([self.df, ta.sma(self.df.Close, length=5)], axis=1, )
+        self.df = pd.concat([self.df, ta.sma(self.df.Close, length=14)], axis=1, )
+        self.df = pd.concat([self.df, ta.sma(self.df.Close, length=21)], axis=1, )
+        self.df = pd.concat([self.df, ta.sma(self.df.Close, length=34)], axis=1, )
+        self.df = pd.concat([self.df, ta.sma(self.df.Close, length=50)], axis=1, )
+        self.df = pd.concat([self.df, ta.sma(self.df.Close, length=100)], axis=1, )
+        self.df = pd.concat([self.df, ta.rsi(self.df.Close)], axis=1, )
+        self.df = pd.concat([self.df, ta.adx(self.df.High, self.df.Close, self.df.Low)], axis=1, ) # ADX_14 	DMP_14 	DMN_14
+        self.df = pd.concat([self.df, ta.bbands(self.df.Close)], axis=1, )
+        self.df = pd.concat([self.df, ta.psar(self.df.High, self.df.Low, self.df.Close)], axis=1, )
+        self.df = pd.concat([self.df, ta.aroon(self.df.High, self.df.Low)], axis=1, )
+        self.df = pd.concat([self.df, ta.macd(self.df.Close)], axis=1, )
+
+
+        self.df.dropna(inplace=True)
+        self.meaningful_df = pd.DataFrame()
+
+        # Assuming 'df' is your source DataFrame and 'meaningful_df' is the target DataFrame where you want to store your results
+
+        # Simple Moving Average (SMA) Comparisons
+        self.meaningful_df['SMA_5_above_14'] = (self.df['SMA_5'] >= self.df['SMA_14']).astype(int)
+        self.meaningful_df['SMA_5_above_21'] = (self.df['SMA_5'] >= self.df['SMA_21']).astype(int)
+        self.meaningful_df['SMA_5_above_34'] = (self.df['SMA_5'] >= self.df['SMA_34']).astype(int)
+        self.meaningful_df['SMA_5_above_50'] = (self.df['SMA_5'] >= self.df['SMA_50']).astype(int)
+        self.meaningful_df['SMA_5_above_100'] = (self.df['SMA_5'] >= self.df['SMA_100']).astype(int)
+
+        self.meaningful_df['SMA_14_above_21'] = (self.df['SMA_14'] >= self.df['SMA_21']).astype(int)
+        self.meaningful_df['SMA_14_above_34'] = (self.df['SMA_14'] >= self.df['SMA_34']).astype(int)
+        self.meaningful_df['SMA_14_above_50'] = (self.df['SMA_14'] >= self.df['SMA_50']).astype(int)
+        self.meaningful_df['SMA_14_above_100'] = (self.df['SMA_14'] >= self.df['SMA_100']).astype(int)
+
+        self.meaningful_df['SMA_21_above_34'] = (self.df['SMA_21'] >= self.df['SMA_34']).astype(int)
+        self.meaningful_df['SMA_21_above_50'] = (self.df['SMA_21'] >= self.df['SMA_50']).astype(int)
+        self.meaningful_df['SMA_21_above_100'] = (self.df['SMA_21'] >= self.df['SMA_100']).astype(int)
+
+        self.meaningful_df['SMA_34_above_50'] = (self.df['SMA_34'] >= self.df['SMA_50']).astype(int)
+        self.meaningful_df['SMA_34_above_100'] = (self.df['SMA_34'] >= self.df['SMA_100']).astype(int)
+
+        self.meaningful_df['SMA_50_above_100'] = (self.meaningful_df['SMA_50'] >= self.meaningful_df['SMA_100']).astype(int)
+
+        # Relative Strength Index (RSI)
+        self.meaningful_df['RSI_above_70'] = (self.df['RSI_14'] >= 70).astype(int)
+        self.meaningful_df['RSI_above_80'] = (self.df['RSI_14'] >= 80).astype(int)
+        self.meaningful_df['RSI_below_30'] = (self.df['RSI_14'] <= 30).astype(int)
+        self.meaningful_df['RSI_below_20'] = (self.df['RSI_14'] <= 20).astype(int)
+
+        # Directional Movement Index (ADX)
+        self.meaningful_df['ADX_Class'] = self.df['ADX_14'].apply(lambda x: 0 if x < 20 else 1 if x < 25 else 2)
+        self.meaningful_df['DMP_bigger_than_DMN'] = (self.df['DMP_14'] > self.df['DMN_14']).astype(int)
+        self.meaningful_df['DMP_DMN_diff'] = self.df['DMP_14'] - self.df['DMN_14']
+
+        # Bollinger Bands (BBands)
+        self.meaningful_df['BBands_distance_from_lower'] = self.df['Close'] - self.df['BBL_5_2.0']
+        self.meaningful_df['BBands_distance_from_upper'] = self.df['BBU_5_2.0'] - self.df['Close']
+        self.meaningful_df['BBands_bandwidth'] = self.df['BBB_5_2.0']
+
+        # Parabolic SAR (PSAR)
+        self.meaningful_df['PSAR'] = (~self.df['PSARl_0.02_0.2'].isna()).astype(int)
+
+        # Moving Average Convergence Divergence (MACD)
+        self.meaningful_df['MACD_signal_above_macd'] = (self.df['MACDs_12_26_9'] >= self.df['MACD_12_26_9']).astype(int)
+        self.meaningful_df['MACD_histogram'] = self.df['MACDh_12_26_9']
+        self.meaningful_df['MACD_histogram_sign'] = (self.df['MACDh_12_26_9'] >= 0).astype(int)
+
+
+
+
+
+        
+
+
+
+
         prices = self.df.loc[:, 'Close'].to_numpy()
 
-        prices[self.frame_bound[0] - self.window_size]  # validate index (TODO: Improve validation)
-        prices = prices[self.frame_bound[0]-self.window_size:self.frame_bound[1]]
+        
 
         diff = np.insert(np.diff(prices), 0, 0)
-        signal_features = np.column_stack((prices, diff))
+        signal_features = self.meaningful_df.to_numpy()
 
         return prices.astype(np.float32), signal_features.astype(np.float32)
 
