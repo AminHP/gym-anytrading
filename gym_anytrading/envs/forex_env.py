@@ -120,7 +120,7 @@ class ForexEnv(TradingEnv):
 
         diff = np.insert(np.diff(prices), 0, 0)
         signal_features = self.meaningful_df.to_numpy()
-
+        signal_features = np.column_stack((prices, diff, signal_features))
         return prices.astype(np.float32), signal_features.astype(np.float32)
 
     def _calculate_reward(self, action: int) -> float:
