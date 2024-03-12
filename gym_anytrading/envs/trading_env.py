@@ -8,23 +8,60 @@ import gymnasium as gym
 
 
 class Actions(Enum):
+    """Defines possible actions in the trading environment.
+
+    Attributes:
+        Sell: Represents a sell action.
+        Buy: Represents a buy action.
+        Hold: Represents a hold (no action) decision.
+    """
     Sell = 0
     Buy = 1
     Hold = 2
 
+
 class Positions(Enum):
+    """Defines possible positions in the trading environment.
+
+    Attributes:
+        Short: Represents a short position.
+        Long: Represents a long position.
+
+    Methods:
+        opposite: Returns the opposite trading position.
+    """
     Short = 0
     Long = 1
 
     def opposite(self):
+        """Returns the opposite trading position.
+
+        Returns:
+            Positions: The opposite trading position.
+        """
         return Positions.Short if self == Positions.Long else Positions.Long
 
 
 class TradingEnv(gym.Env):
+    """A trading environment for reinforcement learning based on gym.Env.
 
+    This environment simulates trading activities with a focus on buying, selling, and holding actions based on provided market data.
+
+    Attributes:
+        metadata (dict): Rendering and FPS metadata for the environment.
+        df (DataFrame): The dataset containing market data.
+        window_size (int): The size of the observation window.
+        render_mode (str): The mode used for rendering the environment. Defaults to None.
+
+    Args:
+        df (DataFrame): The input dataset containing market data.
+        window_size (int): The size of the window for generating observations.
+        render_mode (str, optional): The mode for rendering. Defaults to None.
+    """
     metadata = {'render_modes': ['human'], 'render_fps': 3}
 
     def __init__(self, df, window_size, render_mode=None):
+        """Initializes the TradingEnv with a dataset, window size, and render mode."""
         assert df.ndim == 2
         assert render_mode is None or render_mode in self.metadata['render_modes']
 
@@ -32,7 +69,7 @@ class TradingEnv(gym.Env):
 
         self.df = df
         self.window_size = window_size
-        self.prices, self.signal_features = self._process_data()
+        self.prices, self.signal_features = self._process_data
         self.shape = (window_size, self.signal_features.shape[1])
 
         # spaces
@@ -56,6 +93,16 @@ class TradingEnv(gym.Env):
         self.history = None
 
     def reset(self, seed=None, options=None):
+        """Resets the environment to an initial state and returns an initial observation.
+
+        Args:
+            seed (int, optional): The seed for the random number generator.
+            options (dict, optional): Configuration options for the environment reset.
+
+        Returns:
+            observation (object): The initial observation for the environment.
+            info (dict): Diagnostic information useful for debugging.
+        """
         super().reset(seed=seed, options=options)
         self.action_space.seed(int((self.np_random.uniform(0, seed if seed is not None else 1))))
 
@@ -69,6 +116,15 @@ class TradingEnv(gym.Env):
         self._first_rendering = True
         self.history = {}
 
+
+
+        # Initialize metrics
+        self.max_balance = 0
+        self.max_drawdown = 0
+        self.total_trades = 0
+        self.winning_trades = 0
+
+
         observation = self._get_observation()
         info = self._get_info()
 
@@ -76,30 +132,49 @@ class TradingEnv(gym.Env):
             self._render_frame()
 
         return observation, info
+
     def step(self, action):
+        """Executes a step in the environment given an action.
+
+        Args:
+            action (int): The action to be executed.
+
+        Returns:
+            observation (object): The agent's observation of the current environment.
+            reward (float): Amount of reward returned after previous action.
+            done (bool): Whether the episode has ended, in which case further step() calls will return undefined results.
+            truncated (bool): Whether the episode was truncated before reaching the natural terminal state.
+            info (dict): Contains auxiliary diagnostic information (helpful for debugging, and sometimes learning).
+        """
         self._truncated = False
         self._current_tick += 1
 
         if self._current_tick == self._end_tick:
             self._truncated = True
 
-        step_reward = 0  
-        if action != Actions.Hold.value:  
+        step_reward = 0
+        trade_made = False  # Flag to indicate if a trade was made
+        previous_balance = self._total_profit  # Capture the balance before the trade to calculate drawdown and win/loss
+
+        if action != Actions.Hold.value:
             step_reward = self._calculate_reward(action)
             self._total_reward += step_reward
 
             self._update_profit(action)
 
-            trade = False
             if (
-                (action == Actions.Buy.value and self._position == Positions.Short) or
-                (action == Actions.Sell.value and self._position == Positions.Long)
+                    (action == Actions.Buy.value and self._position == Positions.Short) or
+                    (action == Actions.Sell.value and self._position == Positions.Long)
             ):
-                trade = True
-
-            if trade:
+                trade_made = True  # A trade was executed
                 self._position = self._position.opposite()
                 self._last_trade_tick = self._current_tick
+
+        # Update financial metrics after the trade
+        if trade_made:
+            # Calculate the change in balance to determine if the trade was winning or losing
+            change_in_balance = self._total_profit - previous_balance
+            self._update_trade_metrics(change_in_balance)
 
         self._position_history.append(self._position)
         observation = self._get_observation()
@@ -111,6 +186,17 @@ class TradingEnv(gym.Env):
 
         return observation, step_reward, False, self._truncated, info
 
+    def _update_trade_metrics(self, change_in_balance):
+        # Update maximum drawdown
+        self.max_balance = max(self.max_balance, self._total_profit)
+        current_drawdown = (self.max_balance - self._total_profit) / self.max_balance if self.max_balance != 0 else 0
+        self.max_drawdown = max(self.max_drawdown, current_drawdown)
+
+        # Update win/loss count
+        self.total_trades += 1
+        if change_in_balance > 0:
+            self.winning_trades += 1
+
     def _get_info(self):
         return dict(
             total_reward=self._total_reward,
@@ -119,7 +205,7 @@ class TradingEnv(gym.Env):
         )
 
     def _get_observation(self):
-        return self.signal_features[(self._current_tick-self.window_size+1):self._current_tick+1]
+        return self.signal_features[(self._current_tick - self.window_size + 1):self._current_tick + 1]
 
     def _update_history(self, info):
         if not self.history:
