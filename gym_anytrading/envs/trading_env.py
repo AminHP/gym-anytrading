@@ -197,12 +197,24 @@ class TradingEnv(gym.Env):
         if change_in_balance > 0:
             self.winning_trades += 1
 
+    # def _get_info(self):
+    #     return dict(
+    #         total_reward=self._total_reward,
+    #         total_profit=self._total_profit,
+    #         position=self._position
+    #     )
     def _get_info(self):
-        return dict(
-            total_reward=self._total_reward,
-            total_profit=self._total_profit,
-            position=self._position
-        )
+        return {
+            'total_reward': self._total_reward,
+            'total_profit': self._total_profit,
+            # 'position': self._position,
+            'max_balance': self.max_balance,
+            'max_drawdown': self.max_drawdown,
+            'total_trades': self.total_trades,
+            'winning_trades': self.winning_trades,
+        }
+
+
 
     def _get_observation(self):
         return self.signal_features[(self._current_tick - self.window_size + 1):self._current_tick + 1]
