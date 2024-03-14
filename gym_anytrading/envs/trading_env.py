@@ -180,7 +180,7 @@ class TradingEnv(gym.Env):
         observation = self._get_observation()
         info = self._get_info()
         self._update_history(info)
-
+        
         if self.render_mode == 'human':
             self._render_frame()
 
