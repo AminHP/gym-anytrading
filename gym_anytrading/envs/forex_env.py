@@ -58,7 +58,7 @@ class ForexEnv(TradingEnv):
         self.df = pd.concat([self.df, ta.aroon(self.df.High, self.df.Low)], axis=1, )
         self.df = pd.concat([self.df, ta.macd(self.df.Close)], axis=1, )
 
-        self.df.dropna(inplace=True)
+        # self.df.dropna(inplace=True)
         self.meaningful_df = pd.DataFrame()
 
         # Simple Moving Average (SMA) Comparisons
@@ -110,7 +110,7 @@ class ForexEnv(TradingEnv):
         prices = self.df.loc[:, 'Close'].to_numpy()
 
         diff = np.insert(np.diff(prices), 0, 0)
-        signal_features = self.meaningful_df.to_numpy()
+        signal_features = self.meaningful_df.fillna(0).to_numpy()
         signal_features = np.column_stack((prices, diff, signal_features))
         return prices.astype(np.float32), signal_features.astype(np.float32)
 
